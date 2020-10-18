@@ -13,14 +13,20 @@ variables:
   # Web app name
   webAppName: 'udacity-techconf'
 
+  # Function app name
+  functionAppName: 'techconf-messanger'
+
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
   # Environment name
   environmentName: 'udacity-techconf'
 
-  # Project root folder. Point to the folder containing manage.py file.
-  projectRoot: $(System.DefaultWorkingDirectory)/web
+  # Web App Project root folder. Point to the folder containing manage.py file.
+  webAppProjectRoot: $(System.DefaultWorkingDirectory)/web
+
+  # function Project root folder. Point to the folder containing manage.py file.
+  functionProjectRoot: $(System.DefaultWorkingDirectory)/function
   
   # Python version: 3.7
   pythonVersion: '3.7'
@@ -33,6 +39,13 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    - bash: |
+        if [ -f extensions.csproj ]
+        then
+            dotnet build extensions.csproj --output ./bin
+        fi
+      displayName: 'Build extensions'
+
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
@@ -44,19 +57,37 @@ stages:
         python -m pip install --upgrade pip
         pip install setup
         pip install -r requirements.txt
-      workingDirectory: $(projectRoot)
-      displayName: "Install requirements"
+      workingDirectory: $(webAppProjectRoot)
+      displayName: "Install webApp requirements"
+
+      - bash: |
+        python -m venv worker_venv
+        source worker_venv/bin/activate
+        pip install setuptools
+        pip install -r requirements.txt
+      workingDirectory: $(functionProjectRoot)
+      displayName: 'Install function requirements'
 
     - task: ArchiveFiles@2
-      displayName: 'Archive files'
+      displayName: 'Archive wb files'
       inputs:
-        rootFolderOrFile: '$(projectRoot)'
+        rootFolderOrFile: '$(webAppProjectRoot)'
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId)web.zip
+        replaceExistingArchive: true
+   
+    - task: ArchiveFiles@2
+      displayName: 'Archive function files'
+      inputs:
+        rootFolderOrFile: '$(functionProjectRoot)'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId)function.zip
         replaceExistingArchive: true
 
-    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+
+    - upload: $(Build.ArtifactStagingDirectory)/
       displayName: 'Upload package'
       artifact: drop
 
@@ -84,4 +115,12 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
+              package: $(Pipeline.Workspace)/drop/$(Build.BuildId)web.zip
+          
+          - task: AzureFunctionApp@1
+            displayName: 'Azure Function App Deploy'
+            inputs:
+              azureSubscription: $(azureServiceConnectionId)
+              appType: functionAppLinux
+              appName: $(functionAppName)
+              package: $(Pipeline.Workspace)/drop/$(Build.BuildId)function.zip
