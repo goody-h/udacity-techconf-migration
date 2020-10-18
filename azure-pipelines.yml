@@ -60,7 +60,7 @@ stages:
       workingDirectory: $(webAppProjectRoot)
       displayName: "Install webApp requirements"
 
-      - bash: |
+    - bash: |
         python -m venv worker_venv
         source worker_venv/bin/activate
         pip install setuptools
