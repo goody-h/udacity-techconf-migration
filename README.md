@@ -63,9 +63,19 @@ Complete a month cost analysis of each Azure resource to give an estimate total 
 
 | Azure Resource | Service Tier | Monthly Cost |
 | ------------ | ------------ | ------------ |
-| *Azure Postgres Database* |     |              |
-| *Azure Service Bus*   |         |              |
-| ...                   |         |              |
+| *Azure Postgres Database* | Basic    | $55.59   |
+| *Azure Service Bus*   | Basic        | $0.05   |
+| *App Service Plan*   | B1        | $12.41  |
+| *Azure Storage Account*   | Standard | $21.84  |
+| **Total**   |  | **$89.89**  |
 
 ## Architecture Explanation
-This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function.
+The following are the reasons behind this Architechtural decision.
+
+- Scaleability: Hosting the Web App in Azure App Service provide the opportunity to scale vertically and horizontally on demand.
+
+- Peformance: Seperating background tasks from The main processes allows for more peformant services that can be scalled independently of each other 
+
+- Cost: Cost savings is achieved by utilizing a shared app service plan for both the web app and the function app.
+
+
